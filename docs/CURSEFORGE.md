@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/v-gachkovsky/items-collect-tracker/main/docs/logo-curseforge.png" width="160" alt="Items Collect Tracker"></p>
+
 **A see-through bar that counts the items you collect, with a goal for each.**
 
 > **Early development.** Items Collect Tracker is young. If something looks wrong or you miss a feature, please
