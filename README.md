@@ -1,4 +1,4 @@
-# ItemsCollectTracker
+# Items Collect Tracker
 
 A small, see-through bar for World of Warcraft (made for **WoW Forever**) that counts the items you're
 collecting and tells you when you have enough.

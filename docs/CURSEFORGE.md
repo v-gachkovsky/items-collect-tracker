@@ -1,6 +1,6 @@
 **A see-through bar that counts the items you collect, with a goal for each.**
 
-> **Early development.** ItemsCollectTracker is young. If something looks wrong or you miss a feature, please
+> **Early development.** Items Collect Tracker is young. If something looks wrong or you miss a feature, please
 > tell me in the comments or on [GitHub](https://github.com/v-gachkovsky/items-collect-tracker/issues):
 > no report is too small.
 

@@ -1,5 +1,5 @@
 ## Interface: 120105, 50504, 20506, 11509, 16001
-## Title: ItemsCollectTracker
+## Title: Items Collect Tracker
 ## Notes: A small see-through bar that counts the items you collect in your bags, with a goal for each.
 ## Author: Volodymyr Hachkovsky
 ## Version: @project-version@

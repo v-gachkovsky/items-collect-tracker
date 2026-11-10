@@ -304,7 +304,7 @@ local function Build()
 
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     title:SetPoint("TOP", 0, -6)
-    title:SetText("|cff7fd4ffItemsCollectTracker|r")
+    title:SetText("|cff7fd4ffItems Collect Tracker|r")
 
     scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", 10, -30)
@@ -408,7 +408,7 @@ function ns.InitOptions()
     local p = CreateFrame("Frame")
     local t = p:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     t:SetPoint("TOPLEFT", 16, -16)
-    t:SetText("ItemsCollectTracker")
+    t:SetText("Items Collect Tracker")
     local b = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
     b:SetSize(200, 26)
     b:SetPoint("TOPLEFT", 16, -50)
@@ -418,6 +418,6 @@ function ns.InitOptions()
         if SettingsPanel then HideUIPanel(SettingsPanel) end
         if not panel or not panel:IsShown() then ns.ToggleOptions() end
     end)
-    local ok, category = pcall(Settings.RegisterCanvasLayoutCategory, p, "ItemsCollectTracker")
+    local ok, category = pcall(Settings.RegisterCanvasLayoutCategory, p, "Items Collect Tracker")
     if ok and category then pcall(Settings.RegisterAddOnCategory, category) end
 end

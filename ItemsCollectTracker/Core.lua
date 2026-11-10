@@ -4,7 +4,7 @@ _G.ItemsCollectTracker = ns
 local L = ns.L
 local U = ns.util
 
-local PREFIX = "|cff7fd4ffItemsCollectTracker|r: "
+local PREFIX = "|cff7fd4ffItems Collect Tracker|r: "
 function ns.Print(text, ...) print(PREFIX .. string.format(L[text], ...)) end
 
 ns.defaults = {
