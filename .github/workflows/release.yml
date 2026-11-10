@@ -1,0 +1,101 @@
+# Release on a version tag (v1.2.3, or v1.2.3-beta1 for a pre-release):
+#   git tag v1.2.3 && git push origin v1.2.3
+# The tag is the single source of the version: it goes into the TOC, the zip name,
+# the GitHub Release and the CurseForge file. Release notes come from CHANGELOG.md.
+#
+# CurseForge needs a repository secret CF_API_KEY (https://legacy.curseforge.com/account/api-tokens)
+# and a repository variable CURSEFORGE_PROJECT_ID. Without them only the GitHub Release is made.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      ADDON: ItemsCollectTracker
+    steps:
+      - uses: actions/checkout@v7
+
+      # Nothing is packed or published while a test fails.
+      - name: Tests
+        run: |
+          sudo apt-get update -q && sudo apt-get install -yq lua5.4
+          lua5.4 tests/run.lua
+          lua5.4 tests/load.lua
+
+      - name: Read version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          case "$VERSION" in
+            *alpha*) echo "RELEASE_TYPE=alpha" >> "$GITHUB_ENV" ;;
+            *-*)     echo "RELEASE_TYPE=beta" >> "$GITHUB_ENV" ;;
+            *)       echo "RELEASE_TYPE=release" >> "$GITHUB_ENV" ;;
+          esac
+
+      - name: Extract release notes
+        run: |
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md has no section for [$VERSION]"
+            exit 1
+          fi
+
+      - name: Package
+        run: |
+          mkdir -p "dist/$ADDON"
+          cp -R "$ADDON/." "dist/$ADDON/"
+          cp LICENSE "dist/$ADDON/"
+          sed -i "s/@project-version@/$VERSION/" "dist/$ADDON/$ADDON.toc"
+          grep -q "^## Version: $VERSION\$" "dist/$ADDON/$ADDON.toc"
+          (cd dist && zip -qr "../$ADDON-$VERSION.zip" "$ADDON")
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          [ "$RELEASE_TYPE" != release ] && prerelease="--prerelease"
+          gh release create "$GITHUB_REF_NAME" "$ADDON-$VERSION.zip" \
+            --title "$VERSION" --notes-file notes.md $prerelease
+
+      - name: CurseForge
+        env:
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          CF_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+        run: |
+          if [ -z "$CF_API_KEY" ] || [ -z "$CF_PROJECT_ID" ]; then
+            echo "::warning::CF_API_KEY or CURSEFORGE_PROJECT_ID is not set, skipping CurseForge upload"
+            exit 0
+          fi
+          api="https://wow.curseforge.com/api"
+
+          # TOC interface numbers -> game version names (120105 -> 12.1.5) -> CurseForge IDs.
+          names=$(sed -n 's/^## Interface: *//p' "$ADDON/$ADDON.toc" | tr ',' '\n' | tr -d ' \r' |
+            awk '{ printf "%d.%d.%d\n", int($1 / 10000), int($1 / 100) % 100, $1 % 100 }' | jq -R . | jq -s .)
+          curl -sf -H "X-Api-Token: $CF_API_KEY" "$api/game/versions" > versions.json
+          ids=$(jq --argjson names "$names" '[.[] | select(.name as $n | $names | index($n)) | .id] | unique' versions.json)
+          echo "Game versions: $(echo "$names" | jq -c .) -> IDs $(echo "$ids" | jq -c .)"
+          if [ "$(echo "$ids" | jq length)" -eq 0 ]; then
+            echo "::error::None of the TOC interface versions are known to CurseForge"
+            exit 1
+          fi
+
+          jq -n --rawfile notes notes.md --argjson ids "$ids" \
+            --arg name "$VERSION" --arg type "$RELEASE_TYPE" \
+            '{ changelog: $notes, changelogType: "markdown", displayName: $name,
+               releaseType: $type, gameVersions: $ids }' > metadata.json
+          curl -sf -H "X-Api-Token: $CF_API_KEY" \
+            -F "metadata=<metadata.json" \
+            -F "file=@$ADDON-$VERSION.zip" \
+            "$api/projects/$CF_PROJECT_ID/upload-file"

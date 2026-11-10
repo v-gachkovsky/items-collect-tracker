@@ -1,0 +1,21 @@
+# The tests on every push and pull request: the pure Lua core (tests/run.lua) and the whole addon against a
+# fake WoW API (tests/load.lua). The release runs them too, before it packs anything.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Lua
+        run: sudo apt-get update -q && sudo apt-get install -yq lua5.4
+
+      - name: Run the tests
+        run: |
+          lua5.4 tests/run.lua
+          lua5.4 tests/load.lua

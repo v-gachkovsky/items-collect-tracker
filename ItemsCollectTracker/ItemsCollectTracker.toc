@@ -1,0 +1,20 @@
+## Interface: 120105, 50504, 20506, 11509, 16001
+## Title: ItemsCollectTracker
+## Notes: A small see-through bar that counts the items you collect in your bags, with a goal for each.
+## Author: Volodymyr Hachkovsky
+## Version: @project-version@
+## SavedVariables: ItemsCollectTrackerDB
+## SavedVariablesPerCharacter: ItemsCollectTrackerCharDB
+## IconTexture: Interface\Icons\INV_Misc_Bag_10
+
+Locale.lua
+Locales\ukUA.lua
+Util.lua
+Core.lua
+Media.lua
+Search.lua
+Popup.lua
+Menu.lua
+AddDialog.lua
+Bar.lua
+Options.lua
