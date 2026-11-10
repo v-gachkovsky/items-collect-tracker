@@ -8,7 +8,6 @@ local MinimapButton = {}
 ns.MinimapButton = MinimapButton
 
 ns.LOGO = "Interface\\AddOns\\ItemsCollectTracker\\Media\\logo"
-local ICON = "Interface\\AddOns\\ItemsCollectTracker\\Media\\minimap" -- the art inside the ring, for the small button
 
 local EDGE = 5 -- its center is this far outside the minimap's edge, so it sits on the border
 local atan2 = math.atan2 or math.atan -- Lua 5.1 in the game, 5.3+ in tests
@@ -70,27 +69,25 @@ function ns.ToggleBar()
     ns.ApplyAll()
 end
 
--- Laid out like the game's own mail button on the minimap: the icon at 7,-6 and the round border over it.
+-- The whole logo: its gold ring is the button's border, so there's no minimap border round it.
 local function Create()
     button = CreateFrame("Button", "ItemsCollectTrackerMinimapButton", Minimap)
-    button:SetSize(33, 33)
+    button:SetSize(31, 31)
     button:SetFrameStrata("MEDIUM")
     button:SetFrameLevel(8)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
-    button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-    local back = button:CreateTexture(nil, "BACKGROUND")
-    back:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
-    back:SetSize(20, 20)
-    back:SetPoint("TOPLEFT", 7, -5)
     local icon = button:CreateTexture(nil, "ARTWORK")
-    icon:SetTexture(ICON) -- no ring of its own: the minimap border goes round it
-    icon:SetSize(18, 18)
-    icon:SetPoint("TOPLEFT", 7, -6)
-    local border = button:CreateTexture(nil, "OVERLAY")
-    border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-    border:SetSize(52, 52)
-    border:SetPoint("TOPLEFT")
+    icon:SetTexture(ns.LOGO)
+    icon:SetAllPoints()
+    local glow = button:CreateTexture(nil, "HIGHLIGHT")
+    glow:SetTexture(ns.LOGO)
+    glow:SetAllPoints()
+    glow:SetBlendMode("ADD")
+    glow:SetAlpha(0.35)
+    -- pressed: the logo sinks a little
+    button:SetScript("OnMouseDown", function() icon:SetPoint("TOPLEFT", 1, -1); icon:SetPoint("BOTTOMRIGHT", 1, -1) end)
+    button:SetScript("OnMouseUp", function() icon:SetAllPoints() end)
 
     button:SetScript("OnClick", function(self, mouse)
         if mouse == "RightButton" then
