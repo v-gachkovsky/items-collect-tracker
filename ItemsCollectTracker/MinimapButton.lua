@@ -8,6 +8,7 @@ local MinimapButton = {}
 ns.MinimapButton = MinimapButton
 
 ns.LOGO = "Interface\\AddOns\\ItemsCollectTracker\\Media\\logo"
+local ICON = "Interface\\AddOns\\ItemsCollectTracker\\Media\\minimap" -- the art inside the ring, for the small button
 
 local EDGE = 5 -- its center is this far outside the minimap's edge, so it sits on the border
 local atan2 = math.atan2 or math.atan -- Lua 5.1 in the game, 5.3+ in tests
@@ -83,8 +84,7 @@ local function Create()
     back:SetSize(20, 20)
     back:SetPoint("TOPLEFT", 7, -5)
     local icon = button:CreateTexture(nil, "ARTWORK")
-    icon:SetTexture(ns.LOGO)
-    icon:SetTexCoord(0.12, 0.88, 0.12, 0.88) -- inside the logo's gold ring: the minimap border takes its place
+    icon:SetTexture(ICON) -- no ring of its own: the minimap border goes round it
     icon:SetSize(18, 18)
     icon:SetPoint("TOPLEFT", 7, -6)
     local border = button:CreateTexture(nil, "OVERLAY")
