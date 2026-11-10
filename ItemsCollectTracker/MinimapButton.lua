@@ -8,6 +8,9 @@ local MinimapButton = {}
 ns.MinimapButton = MinimapButton
 
 ns.LOGO = "Interface\\AddOns\\ItemsCollectTracker\\Media\\logo"
+-- Where the round logo lies in the texture. The transparent margin around it keeps the gold ring whole when
+-- minimap button collectors (Leatrix Plus, LibDBIcon) trim the edges of the icon.
+ns.LOGO_COORDS = { 0.066, 0.934, 0.066, 0.934 }
 
 local EDGE = 5 -- its center is this far outside the minimap's edge, so it sits on the border
 local atan2 = math.atan2 or math.atan -- Lua 5.1 in the game, 5.3+ in tests
@@ -77,11 +80,14 @@ local function Create()
     button:SetFrameLevel(8)
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:RegisterForDrag("LeftButton")
-    local icon = button:CreateTexture(nil, "ARTWORK")
+    -- Named <button>Icon: button collectors take the picture from there.
+    local icon = button:CreateTexture("ItemsCollectTrackerMinimapButtonIcon", "ARTWORK")
     icon:SetTexture(ns.LOGO)
+    icon:SetTexCoord(unpack(ns.LOGO_COORDS))
     icon:SetAllPoints()
     local glow = button:CreateTexture(nil, "HIGHLIGHT")
     glow:SetTexture(ns.LOGO)
+    glow:SetTexCoord(unpack(ns.LOGO_COORDS))
     glow:SetAllPoints()
     glow:SetBlendMode("ADD")
     glow:SetAlpha(0.35)

@@ -91,6 +91,7 @@ _G.GameTooltip = newMock("GameTooltip")
 _G.ColorPickerFrame = newMock("Frame")
 _G.UISpecialFrames = {}
 _G.tinsert = table.insert
+_G.unpack = table.unpack
 _G.wipe = function(t) for k in pairs(t) do t[k] = nil end return t end
 _G.print = function(...) printed[#printed + 1] = table.concat({ ... }, " ") end
 _G.hooksecurefunc = function(a, b, c)
