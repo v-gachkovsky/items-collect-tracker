@@ -40,6 +40,14 @@ ns.LOCALES.ukUA = {
     ["lock or unlock the bar"] = "закріпити або відкріпити панель",
     ["show or hide the bar"] = "показати або сховати панель",
     ["put the bar back in the middle of the screen"] = "повернути панель у центр екрана",
+    ["show or hide the minimap button"] = "показати або сховати кнопку біля мінімапи",
+
+    -- Minimap button
+    ["Click: settings"] = "Клік: налаштування",
+    ["Right click: show the bar"] = "Правий клік: показати панель",
+    ["Right click: hide the bar"] = "Правий клік: сховати панель",
+    ["Drag: move the button"] = "Перетягування: рухати кнопку",
+    ["Minimap button"] = "Кнопка біля мінімапи",
     ["goal reached: %s x%d."] = "мету досягнуто: %s x%d.",
     ["removed %s."] = "прибрано %s.",
     ["commands:"] = "команди:",

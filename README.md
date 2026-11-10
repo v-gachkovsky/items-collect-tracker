@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo-curseforge.png" width="160" alt="Items Collect Tracker"></p>
+
 # Items Collect Tracker
 
 A small, see-through bar for World of Warcraft (made for **WoW Forever**) that counts the items you're
@@ -13,6 +15,7 @@ collecting and tells you when you have enough.
 - Right click on an item: change its goal, move it left or right, lock the bar, settings.
 - Drag any icon (or the +) to move the bar, its bottom-right corner to resize it. No frame and no background
   unless you want one; the + can show only under the mouse.
+- A button on the minimap: click for the settings, right-click to show or hide the bar, drag to move it.
 - English and Ukrainian.
 
 The items on the bar are kept per character; the look and the sound are shared by all characters.
@@ -26,6 +29,7 @@ The items on the bar are kept per character; the look and the sound are shared b
 | `/ic lock`, `/ic unlock` | lock or unlock the bar |
 | `/ic show`, `/ic hide` | show or hide the bar |
 | `/ic reset` | put the bar back in the middle of the screen |
+| `/ic minimap` | show or hide the minimap button |
 
 ## Your own sounds
 

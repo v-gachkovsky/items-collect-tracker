@@ -86,6 +86,7 @@ _G.CreateFrame = function(kind, name)
     return f
 end
 _G.UIParent = newMock("Frame")
+_G.Minimap = newMock("Frame")
 _G.GameTooltip = newMock("GameTooltip")
 _G.ColorPickerFrame = newMock("Frame")
 _G.UISpecialFrames = {}
@@ -188,6 +189,16 @@ RunTimers()
 check("bar created", ns.bar ~= nil)
 check("starts empty", #ns.Items() == 0)
 check("remembered bag item", ns.db.known[2589] == "Linen Cloth")
+local mm = ItemsCollectTrackerMinimapButton
+check("minimap button", mm ~= nil and mm:IsShown())
+mm._scripts.OnClick(mm, "RightButton")
+check("right click hides the bar", ns.db.hidden == true and not ns.bar:IsShown())
+mm._scripts.OnClick(mm, "RightButton")
+check("right click shows it again", ns.db.hidden == false and ns.bar:IsShown())
+SlashCmdList.ITEMSCOLLECTTRACKER("minimap")
+check("/ic minimap hides the button", not mm:IsShown())
+SlashCmdList.ITEMSCOLLECTTRACKER("minimap")
+check("/ic minimap brings it back", mm:IsShown())
 
 -- The background read of the client's items finds the rest.
 local scanner

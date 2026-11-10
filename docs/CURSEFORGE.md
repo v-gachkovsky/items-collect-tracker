@@ -25,6 +25,7 @@ you still need. When you have enough, the number changes color and a sound plays
 - **Ctrl + left click** takes an item off the bar. Pick other keys or another mouse button in the settings.
 - **Right click** on an item: change its goal, move it left or right, lock the bar, settings.
 - **Drag** any icon or the + to move the bar, its bottom-right corner to resize the icons.
+- **Minimap button**: click for the settings, right-click to show or hide the bar.
 
 ## Settings (`/ic`)
 
@@ -41,6 +42,7 @@ The items on the bar are kept for each character; the look and the sound are sha
 - `/ic lock`, `/ic unlock`: lock or unlock the bar
 - `/ic show`, `/ic hide`: show or hide the bar
 - `/ic reset`: put the bar back in the middle of the screen
+- `/ic minimap`: show or hide the minimap button
 
 ## Your own sounds
 

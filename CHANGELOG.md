@@ -26,5 +26,7 @@ First public version. The addon is in early development: please report anything 
   bigger or smaller. Items in a row, the space between them, opacity, background, counting the bank, greying
   out what you don't have and hiding in combat are in the settings (`/ic`).
 - The items on the bar are kept for each character; the look and the sound are shared.
+- **Minimap button**: click for the settings, right-click to show or hide the bar, drag it along the edge.
+  On Retail the addon is in the addon menu by the minimap too.
 - English and Ukrainian.
 - Works on WoW Forever, Classic Era, TBC Anniversary, Mists of Pandaria Classic and Retail.

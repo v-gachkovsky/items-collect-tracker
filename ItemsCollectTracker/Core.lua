@@ -22,6 +22,8 @@ ns.defaults = {
     dimMissing = true,        -- items you have none of are greyed out
     includeBank = false,
     hideInCombat = false,
+    minimapButton = true,
+    minimapAngle = 200,       -- where on the minimap's edge, in degrees (0 = right, 90 = up)
     -- The number
     text = {
         position = "below",   -- "above", "below", "center", "bottomright", "top"
@@ -214,6 +216,7 @@ end
 -- Settings changed: the bar and the open windows follow.
 function ns.ApplyAll()
     if ns.bar then ns.bar:ApplySettings() end
+    if ns.MinimapButton then ns.MinimapButton.Update() end
     ns.Refresh()
 end
 
@@ -270,6 +273,7 @@ local function Help()
     print("  /ic lock, /ic unlock - " .. L["lock or unlock the bar"])
     print("  /ic show, /ic hide - " .. L["show or hide the bar"])
     print("  /ic reset - " .. L["put the bar back in the middle of the screen"])
+    print("  /ic minimap - " .. L["show or hide the minimap button"])
 end
 
 SLASH_ITEMSCOLLECTTRACKER1 = "/ic"
@@ -289,6 +293,9 @@ SlashCmdList.ITEMSCOLLECTTRACKER = function(msg)
         ns.ApplyAll()
     elseif cmd == "show" or cmd == "hide" then
         ns.db.hidden = cmd == "hide"
+        ns.ApplyAll()
+    elseif cmd == "minimap" then
+        ns.db.minimapButton = not ns.db.minimapButton
         ns.ApplyAll()
     elseif cmd == "reset" then
         ns.db.point = nil

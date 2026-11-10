@@ -5,7 +5,8 @@
 ## Version: @project-version@
 ## SavedVariables: ItemsCollectTrackerDB
 ## SavedVariablesPerCharacter: ItemsCollectTrackerCharDB
-## IconTexture: Interface\Icons\INV_Misc_Bag_10
+## IconTexture: Interface\AddOns\ItemsCollectTracker\Media\logo
+## AddonCompartmentFunc: ItemsCollectTracker_OnAddonCompartmentClick
 
 Locale.lua
 Locales\ukUA.lua
@@ -17,4 +18,5 @@ Popup.lua
 Menu.lua
 AddDialog.lua
 Bar.lua
+MinimapButton.lua
 Options.lua
