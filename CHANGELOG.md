@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- **What you have already doesn't count.** With 60 in the bags and a goal of 40, the bar showed 60/40 straight
+  away. Now it counts from 0 what you collect after adding the item. Sell or use some and it counts from what's
+  left. Items added before this version still count everything: right-click one and pick
+  **Count from 0 again**.
+- The gold ring of the minimap button is whole and as thick as in the logo.
+
+### Added
+- **Count from 0 again** in an item's right-click menu.
+- The item tooltip shows how many you have in all, next to how many you collected.
+
 ## [0.1.0-beta1] - 2026-11-10
 
 First public version. The addon is in early development: please report anything that looks wrong.

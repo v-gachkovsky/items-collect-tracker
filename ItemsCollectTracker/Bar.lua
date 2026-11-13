@@ -172,6 +172,10 @@ function ns.CreateBar()
         else
             GameTooltip:AddDoubleLine(L["Collected"], n, 1, 0.82, 0, 1, 1, 1)
         end
+        local have = ns.have[item.id]
+        if have and have ~= n then
+            GameTooltip:AddDoubleLine(L["You have"], have, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6)
+        end
         GameTooltip:AddLine(string.format(L["%s: remove"], ns.RemoveComboText()), 0.6, 0.6, 0.6)
         GameTooltip:AddLine(L["Right click: goal, order, settings"], 0.6, 0.6, 0.6)
         if not ns.db.locked then GameTooltip:AddLine(L["Drag: move the bar"], 0.6, 0.6, 0.6) end
@@ -184,6 +188,7 @@ function ns.CreateBar()
         ShowMenu({
             { text = ns.ColoredName(id, cell.item.name), disabled = true },
             { text = L["Change the goal..."], func = function() ns.dialog:OpenGoal(cell, id) end },
+            { text = L["Count from 0 again"], func = function() ns.RestartCount(id) end },
             { text = L["Move left"], func = function() ns.MoveItem(id, -1) end, disabled = index == 1 },
             { text = L["Move right"], func = function() ns.MoveItem(id, 1) end, disabled = index == #ns.Items() },
             { text = L["Remove"], func = function() ns.RemoveItem(id) end },
@@ -339,7 +344,7 @@ function ns.CreateBar()
             cell.count:SetText(U.FormatCount(n, item.goal, t.format))
             local c = done and t.doneColor or t.color
             cell.count:SetTextColor(c[1], c[2], c[3], c[4] or 1)
-            local missing = ns.db.dimMissing and n == 0
+            local missing = ns.db.dimMissing and (ns.have[item.id] or 0) == 0
             cell.icon:SetDesaturated(missing)
             cell.icon:SetAlpha(missing and 0.5 or 1)
             cell:Show()

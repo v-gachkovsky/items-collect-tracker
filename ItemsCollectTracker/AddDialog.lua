@@ -132,8 +132,13 @@ local function ShowGoalStep(id)
         goal = (stack and stack > 1) and stack or 1
     end
     goalBox:SetText(tostring(goal))
-    local have = ns.Count(id) or 0
-    SetNote(string.format(L["How many to collect? You have %d. 0 means no goal: just count."], have))
+    if item then
+        SetNote(string.format(L["How many to collect? Collected so far: %d. 0 means no goal: just count."],
+            ns.counts[id] or 0))
+    else
+        SetNote(string.format(L["How many to collect? Counting starts from 0: the %d you have don't count. 0 means no goal: just count."],
+            ns.Count(id) or 0))
+    end
     goalBox:SetFocus()
     goalBox:HighlightText()
 end

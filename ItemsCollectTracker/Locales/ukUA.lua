@@ -5,8 +5,10 @@ ns.LOCALES.ukUA = {
     ["Add an item"] = "Додати предмет",
     ["Type a name and pick it from the list, shift-click an item, or drop it on the slot."] =
         "Введіть назву й виберіть зі списку, натисніть на предмет із Shift або перетягніть його в комірку.",
-    ["How many to collect? You have %d. 0 means no goal: just count."] =
-        "Скільки зібрати? Зараз є %d. 0 - без мети, лише рахувати.",
+    ["How many to collect? Counting starts from 0: the %d you have don't count. 0 means no goal: just count."] =
+        "Скільки зібрати? Рахунок почнеться з 0: ті %d, що вже є, не рахуються. 0 - без мети, лише рахувати.",
+    ["How many to collect? Collected so far: %d. 0 means no goal: just count."] =
+        "Скільки зібрати? Вже зібрано: %d. 0 - без мети, лише рахувати.",
     ["The game doesn't know an item with this ID."] = "Гра не знає предмета з таким ID.",
     ["Can't find this item. Pick it from the list, shift-click it in your bags, or drop it on the slot."] =
         "Не знайшов такого предмета. Виберіть його зі списку, натисніть на нього в сумці з Shift або перетягніть у комірку.",
@@ -25,9 +27,11 @@ ns.LOCALES.ukUA = {
     ["Right click: menu"] = "Правий клік: меню",
     ["Collected"] = "Зібрано",
     ["Still needed"] = "Ще треба",
+    ["You have"] = "Усього є",
     ["%s: remove"] = "%s: прибрати",
     ["Right click: goal, order, settings"] = "Правий клік: мета, порядок, налаштування",
     ["Change the goal..."] = "Змінити мету...",
+    ["Count from 0 again"] = "Рахувати знову з 0",
     ["Move left"] = "Посунути ліворуч",
     ["Move right"] = "Посунути праворуч",
     ["Remove"] = "Прибрати",

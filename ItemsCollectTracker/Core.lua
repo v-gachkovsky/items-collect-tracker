@@ -47,7 +47,9 @@ ns.defaults = {
 }
 
 ns.charDefaults = {
-    items = {},               -- { id = 2589, goal = 20, name = "Linen Cloth" }, in bar order
+    -- { id = 2589, goal = 20, name = "Linen Cloth", start = 60, startBank = 75 }, in bar order. start and
+    -- startBank: how many there were in the bags (and the bank) when it was added; only what comes after counts.
+    items = {},
 }
 
 -- Fills missing keys from the defaults. Tables with values in the defaults are filled key by key; empty ones
@@ -85,12 +87,14 @@ local QualityByID = C_Item and C_Item.GetItemQualityByID
 
 ns.QUESTION_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 
--- How many you have: bags (and the bank when set). Nil when the game won't say (a secret value in combat):
--- the bar keeps the last number then.
-function ns.Count(id)
-    local ok, n = pcall(GetCount, id, ns.db.includeBank, false)
+-- How many you have: in the bags, or the bags and the bank. Nil when the game won't say (a secret value in
+-- combat): the bar keeps the last number then.
+local function CountIn(id, bank)
+    local ok, n = pcall(GetCount, id, bank, false)
     if ok and type(n) == "number" and not IsSecret(n) then return n end
 end
+
+function ns.Count(id) return CountIn(id, ns.db.includeBank) end
 
 -- Whether the client knows an item with this ID.
 function ns.ItemExists(id)
@@ -128,7 +132,8 @@ end
 ------------------------------------------------------------------------
 -- The collection: items on the bar, their counts and goals
 ------------------------------------------------------------------------
-ns.counts = {}   -- [id] = last count read
+ns.counts = {}   -- [id] = collected since the item was added (the last count read)
+ns.have = {}     -- [id] = how many you have, collected or not
 local reached = {} -- [id] = the goal was reached at the last count
 local primed = false -- the first count after login sets the state without sounds
 
@@ -144,12 +149,35 @@ function ns.PlayGoalSound()
     if ns.db.sound then ns.PlaySound(ns.db.soundName) end
 end
 
+-- What there was when the item was added (or counting started again) doesn't count.
+local function StartCounting(item)
+    item.start = CountIn(item.id, false) or 0
+    item.startBank = CountIn(item.id, true) or item.start
+end
+
+-- Right after login the bags may still be loading and read as empty: the start mustn't come down to that.
+local bagsLoaded = false
+
+-- How many were collected out of `have`. Fewer than at the start (sold, used, put in the bank): the start
+-- comes down with them, so what's looted next counts.
+local function Collected(item, have)
+    local key = ns.db.includeBank and "startBank" or "start"
+    local start = item[key] or 0 -- items added before 0.1.0-beta2 count everything
+    if have < start then
+        if not bagsLoaded then return 0 end
+        item[key], start = have, have
+    end
+    return have - start
+end
+
 -- Reads every count; plays the sound for goals reached since the last count.
 function ns.Refresh()
     if not ns.char then return end
     for _, item in ipairs(ns.char.items) do
-        local n = ns.Count(item.id)
-        if n then
+        local have = ns.Count(item.id)
+        if have then
+            local n = Collected(item, have)
+            ns.have[item.id] = have
             ns.counts[item.id] = n
             local done = U.Reached(n, item.goal)
             if done and reached[item.id] == false and primed then
@@ -177,7 +205,16 @@ function ns.QueueRefresh()
     end)
 end
 
--- Adds an item, or changes its goal when it's on the bar already. A goal reached already doesn't play a sound.
+-- Marks whether the goal is reached now, so that it doesn't play a sound.
+local function Settle(item)
+    local have = ns.Count(item.id)
+    local n = have and Collected(item, have) or ns.counts[item.id] or 0
+    ns.counts[item.id] = n
+    reached[item.id] = U.Reached(n, item.goal)
+    ns.Refresh()
+end
+
+-- Adds an item, counting from 0 whatever you have of it already, or changes its goal when it's on the bar.
 function ns.SetItem(id, goal)
     goal = math.max(0, math.floor(tonumber(goal) or 0))
     local item = ns.FindItem(id)
@@ -185,20 +222,26 @@ function ns.SetItem(id, goal)
         item.goal = goal
     else
         item = { id = id, goal = goal, name = ns.ItemName(id) }
+        StartCounting(item)
         table.insert(ns.char.items, item)
         if item.name then ns.db.known[id] = item.name end
     end
-    local n = ns.Count(id) or ns.counts[id] or 0
-    ns.counts[id] = n
-    reached[id] = U.Reached(n, goal)
-    ns.Refresh()
+    Settle(item)
+end
+
+-- Counts an item from 0 again.
+function ns.RestartCount(id)
+    local item = ns.FindItem(id)
+    if not item then return end
+    StartCounting(item)
+    Settle(item)
 end
 
 function ns.RemoveItem(id)
     local item, i = ns.FindItem(id)
     if not item then return end
     table.remove(ns.char.items, i)
-    reached[id], ns.counts[id] = nil, nil
+    reached[id], ns.counts[id], ns.have[id] = nil, nil, nil
     ns.Print("removed %s.", ns.ColoredName(id, item.name))
     if ns.bar then ns.bar:Update() end
 end
@@ -244,12 +287,14 @@ ns.On("ADDON_LOADED", function(name)
 end)
 
 ns.On("PLAYER_LOGIN", function()
+    C_Timer.After(10, function() bagsLoaded = true end) -- in case the bags send no update
     ns.bar = ns.CreateBar()
     ns.InitOptions()
     ns.search.Init()
     ns.ApplyAll()
 end)
 
+ns.On("BAG_UPDATE_DELAYED", function() bagsLoaded = true end)
 for _, e in ipairs({ "BAG_UPDATE_DELAYED", "BAG_UPDATE", "PLAYERBANKSLOTS_CHANGED", "BANKFRAME_OPENED",
     "BANKFRAME_CLOSED", "PLAYER_ENTERING_WORLD" }) do
     ns.On(e, ns.QueueRefresh)

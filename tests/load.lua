@@ -235,21 +235,35 @@ ns.dialog:Confirm()
 check("item added with stack size goal", ns.Items()[1].id == 2592 and ns.Items()[1].goal == 20)
 check("dialog closed", not ns.dialog:IsShown())
 
--- Count rises to the goal: one sound.
-ns.SetItem(2589, 10)
+-- What's in the bags when an item is added doesn't count: 60 there, goal 40, the bar starts at 0.
+local function BagsChange(id, n)
+    bags[id] = n
+    Fire("BAG_UPDATE_DELAYED")
+    RunTimers()
+end
+bags[2589] = 60
+ns.SetItem(2589, 40)
 check("two items", #ns.Items() == 2)
-bags[2589] = 9
-Fire("BAG_UPDATE_DELAYED")
-RunTimers()
-check("no sound below goal", #played == 0)
-bags[2589] = 12
-Fire("BAG_UPDATE_DELAYED")
-RunTimers()
+check("counting starts from 0", ns.counts[2589] == 0 and ns.bar.cells[2].count:GetText() == "0")
+check("no sound for what was there", #played == 0)
+BagsChange(2589, 90)
+check("no sound below goal", #played == 0 and ns.counts[2589] == 30)
+BagsChange(2589, 100)
 check("sound on goal", #played == 1 and played[1] == 878)
-Fire("BAG_UPDATE_DELAYED")
-RunTimers()
+BagsChange(2589, 100)
 check("sound only once", #played == 1)
-check("count shown", ns.bar.cells[2].count:GetText() == "12")
+check("count shown", ns.bar.cells[2].count:GetText() == "40")
+-- Fewer than at the start (sold some): what comes next counts from there.
+BagsChange(2589, 50)
+check("start comes down", ns.counts[2589] == 0 and ns.Items()[2].start == 50)
+BagsChange(2589, 55)
+check("looted after selling counts", ns.counts[2589] == 5)
+ns.SetItem(2589, 10)
+check("changing the goal keeps the count, no sound", ns.counts[2589] == 5 and #played == 1)
+ns.RestartCount(2589)
+check("count from 0 again", ns.counts[2589] == 0 and ns.Items()[2].start == 55)
+BagsChange(2589, 65)
+check("sound after restart", #played == 2)
 
 -- Ctrl + left click removes.
 _G.ctrlDown = true
