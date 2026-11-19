@@ -1,10 +1,9 @@
--- The bar: an icon per item with its count, and the + that adds the next one. No frame, no background
--- (unless set): only the icons and the numbers. Drag any icon to move it, the corner to resize it.
+-- A bar: an icon per item with its count, and the + that adds the next one. No frame, no background
+-- (unless set): only the icons and the numbers. A character can have several bars.
 local _, ns = ...
 local L = ns.L
 local U = ns.util
 
-local DEFAULT_POINT = { "TOPLEFT", "CENTER", -120, -160 }
 local MIN_SIZE, MAX_SIZE = 16, 96
 local IDLE_PLUS_ALPHA = 0.45
 
@@ -40,35 +39,101 @@ local function IsRemoveClick(button)
     return button == ns.db.removeButton and U.ModifiersMatch(ns.db.removeMods, Held())
 end
 
-------------------------------------------------------------------------
--- Position: the bar's top left corner from the screen's center, so it grows right and down
-------------------------------------------------------------------------
-local function SavePoint(bar)
-    local ux, uy = UIParent:GetCenter()
-    local left, top = bar:GetLeft(), bar:GetTop()
-    if not ux or not left then return end
-    local ratio = UIParent:GetEffectiveScale() / bar:GetEffectiveScale()
-    ns.db.point = { "TOPLEFT", "CENTER", left - ux * ratio, top - uy * ratio }
+-- "12 min", "1 h 5 min"
+local function Duration(seconds)
+    local h, m = U.SplitDuration(seconds)
+    if h > 0 then return string.format(L["%d h %d min"], h, m) end
+    return string.format(L["%d min"], m)
 end
 
-local function ApplyPoint(bar)
-    if bar.moving or bar.sizing then return end
-    local p = ns.db.point or DEFAULT_POINT
-    bar:ClearAllPoints()
-    bar:SetPoint(p[1], UIParent, p[2], p[3], p[4])
+-- The room the number takes above or below the icons.
+local function TextRoom()
+    local p = ns.db.text.position
+    if p == "above" or p == "below" then return math.ceil(ns.db.text.size * 1.15) + 2 end
+    return 0
+end
+
+------------------------------------------------------------------------
+-- Dragging an item to another place: a copy of its icon follows the cursor
+------------------------------------------------------------------------
+local ghost
+local function Ghost()
+    if ghost then return ghost end
+    ghost = CreateFrame("Frame", nil, UIParent)
+    ghost:SetFrameStrata("TOOLTIP")
+    ghost:SetSize(32, 32)
+    ghost.icon = ghost:CreateTexture(nil, "ARTWORK")
+    ghost.icon:SetAllPoints()
+    ghost.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    ghost:SetAlpha(0.8)
+    ghost:Hide()
+    ghost:SetScript("OnUpdate", function(self)
+        local x, y = GetCursorPosition()
+        local s = self:GetEffectiveScale()
+        self:ClearAllPoints()
+        self:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x / s, y / s)
+    end)
+    return ghost
+end
+
+-- Where an item dragged by `id` lands: on an item (it takes that place), or on a bar or its + (the end).
+local function DropTarget(id)
+    for _, bar in ipairs(ns.bars) do
+        if bar:IsShown() and bar:Data() then
+            for _, cell in ipairs(bar.cells) do
+                if cell:IsShown() and cell.item and cell.item.id ~= id and cell:IsMouseOver() then
+                    local _, pos = ns.FindItem(cell.item.id)
+                    return bar.index, pos
+                end
+            end
+            if bar.plus:IsMouseOver() or bar:IsMouseOver() then return bar.index, nil end
+        end
+    end
 end
 
 ------------------------------------------------------------------------
 -- Building
 ------------------------------------------------------------------------
-function ns.CreateBar()
-    local bar = CreateFrame("Frame", "ItemsCollectTrackerBar", UIParent, "BackdropTemplate")
+function ns.CreateBar(index)
+    local name = index == 1 and "ItemsCollectTrackerBar" or ("ItemsCollectTrackerBar" .. index)
+    local bar = CreateFrame("Frame", name, UIParent, "BackdropTemplate")
+    bar.index = index
     bar:SetSize(40, 40)
     bar:SetMovable(true)
     bar:SetClampedToScreen(true)
     bar:SetFrameStrata("MEDIUM")
     bar.cells = {}
+    bar.visible = {}
     local StyleCell
+
+    function bar:Data() return ns.char.bars[self.index] end
+    function bar:Items() return self:Data().items end
+
+    ------------------------------------------------------------------------
+    -- Position: the top left corner from the screen's center, so the bar grows right and down
+    ------------------------------------------------------------------------
+    local function DefaultPoint()
+        if index == 1 and ns.db.point then return ns.db.point end
+        local step = ns.db.iconSize + TextRoom() + 24
+        return { "TOPLEFT", "CENTER", -120, -160 - (index - 1) * step }
+    end
+
+    local function SavePoint()
+        local ux, uy = UIParent:GetCenter()
+        local left, top = bar:GetLeft(), bar:GetTop()
+        if not ux or not left then return end
+        local ratio = UIParent:GetEffectiveScale() / bar:GetEffectiveScale()
+        local p = { "TOPLEFT", "CENTER", left - ux * ratio, top - uy * ratio }
+        bar:Data().point = p
+        if index == 1 then ns.db.point = { p[1], p[2], p[3], p[4] } end -- a new character's first bar starts here
+    end
+
+    local function ApplyPoint()
+        if bar.moving or bar.sizing then return end
+        local p = bar:Data().point or DefaultPoint()
+        bar:ClearAllPoints()
+        bar:SetPoint(p[1], UIParent, p[2], p[3], p[4])
+    end
 
     local function StartMoving()
         if ns.db.locked then return end
@@ -80,25 +145,78 @@ function ns.CreateBar()
         bar:StopMovingOrSizing()
         bar.moving = nil
         if bar.SetUserPlaced then bar:SetUserPlaced(false) end
-        SavePoint(bar)
-        ApplyPoint(bar)
+        SavePoint()
+        ApplyPoint()
     end
 
+    ------------------------------------------------------------------------
+    -- Menus
+    ------------------------------------------------------------------------
     local function ShowMenu(entries)
         HideTip(GameTooltip:GetOwner())
+        ns.activeBar = index
         table.insert(entries, { separator = true })
         table.insert(entries, {
-            text = ns.db.locked and L["Unlock the bar"] or L["Lock the bar"],
+            text = ns.db.locked and L["Unlock the bars"] or L["Lock the bars"],
             func = function() ns.db.locked = not ns.db.locked; ns.ApplyAll() end,
         })
         table.insert(entries, { text = L["Settings"], func = ns.ToggleOptions })
         ns.Menu:Open(entries)
     end
 
+    local function ConfirmRemoveBar()
+        local count = #bar:Items()
+        if count == 0 then return ns.RemoveBar(index) end
+        StaticPopupDialogs.ITEMSCOLLECTTRACKER_REMOVE_BAR = {
+            text = L["Remove this bar and its %d items?"],
+            button1 = YES, button2 = NO,
+            OnAccept = function(_, data) ns.RemoveBar(data) end,
+            timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+        }
+        StaticPopup_Show("ITEMSCOLLECTTRACKER_REMOVE_BAR", count, nil, index)
+    end
+
+    local function ClassColored(key, class)
+        local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+        return c and c.colorStr and ("|c" .. c.colorStr .. key .. "|r") or key
+    end
+
+    local function CopyMenu()
+        local entries = { { text = L["Copy the items of"], disabled = true } }
+        for _, list in ipairs(ns.OtherLists()) do
+            entries[#entries + 1] = {
+                text = string.format("%s (%d)", ClassColored(list.key, list.class), #list.items),
+                func = function() ns.CopyList(list.key, index) end,
+            }
+        end
+        ns.Menu:Open(entries)
+    end
+
+    local function PlusMenu(plus)
+        local entries = { { text = L["Add an item"], func = function() ns.dialog:OpenAdd(plus) end } }
+        if ns.recipe and ns.recipe.Current() then
+            entries[#entries + 1] = { text = L["Reagents of the open recipe..."], func = function() ns.recipe.Open(plus) end }
+        end
+        if #ns.OtherLists() > 0 then
+            entries[#entries + 1] = { text = L["Copy from another character..."], func = function()
+                C_Timer.After(0, CopyMenu) -- after this menu closes
+            end }
+        end
+        entries[#entries + 1] = { separator = true }
+        entries[#entries + 1] = { text = L["New bar"], func = ns.AddBar }
+        if #ns.Bars() > 1 then entries[#entries + 1] = { text = L["Remove this bar"], func = ConfirmRemoveBar } end
+        entries[#entries + 1] = {
+            text = ns.db.hideDone and L["Show items whose goal is reached"] or L["Hide items whose goal is reached"],
+            func = function() ns.db.hideDone = not ns.db.hideDone; ns.ApplyAll() end,
+        }
+        ShowMenu(entries)
+    end
+
     -- An item dropped on the bar: added, or its goal opened when it's there already.
     local function Dropped(anchor)
         local id = ns.TakeCursorItem()
         if not id then return false end
+        ns.activeBar = index
         ns.dialog:OpenGoal(anchor, id)
         return true
     end
@@ -124,9 +242,8 @@ function ns.CreateBar()
     plus.v:SetPoint("CENTER")
     plus:SetScript("OnClick", function(self, button)
         if Dropped(self) then return end
-        if button == "RightButton" then
-            return ShowMenu({ { text = L["Add an item"], func = function() ns.dialog:OpenAdd(self) end } })
-        end
+        ns.activeBar = index
+        if button == "RightButton" then return PlusMenu(self) end
         if ns.dialog:IsShown() then ns.dialog:Hide() else ns.dialog:OpenAdd(self) end
     end)
     plus:SetScript("OnReceiveDrag", function(self) Dropped(self) end)
@@ -136,6 +253,9 @@ function ns.CreateBar()
         GameTooltip:SetOwner(self, "ANCHOR_TOPRIGHT")
         GameTooltip:SetText(L["Add an item"])
         GameTooltip:AddLine(L["Click: type a name. Or drop an item from your bags here."], 1, 1, 1, true)
+        if bar.hiddenDone > 0 then
+            GameTooltip:AddLine(string.format(L["Items whose goal is reached, hidden: %d"], bar.hiddenDone), 0.25, 1, 0.25)
+        end
         if not ns.db.locked then GameTooltip:AddLine(L["Drag: move the bar"], 0.6, 0.6, 0.6) end
         GameTooltip:AddLine(L["Right click: menu"], 0.6, 0.6, 0.6)
         GameTooltip:Show()
@@ -157,6 +277,13 @@ function ns.CreateBar()
     ------------------------------------------------------------------------
     -- Item cells
     ------------------------------------------------------------------------
+    local SOURCES = {
+        { key = "bags", text = "In the bags" },
+        { key = "bank", text = "In the bank" },
+        { key = "mail", text = "In the mail" },
+        { key = "alts", text = "Other characters" },
+    }
+
     local function CellTooltip(cell)
         local item = cell.item
         if not item then return end
@@ -172,33 +299,45 @@ function ns.CreateBar()
         else
             GameTooltip:AddDoubleLine(L["Collected"], n, 1, 0.82, 0, 1, 1, 1)
         end
-        local have = ns.have[item.id]
+        local rate, eta = ns.Pace(item.id)
+        if rate then
+            GameTooltip:AddDoubleLine(L["Per hour"], math.floor(rate + 0.5), 1, 0.82, 0, 1, 1, 1)
+            if eta then GameTooltip:AddDoubleLine(L["Goal in"], "~" .. Duration(eta), 1, 0.82, 0, 1, 1, 1) end
+        end
+        local have, parts = ns.have[item.id], ns.parts[item.id]
         if have and have ~= n then
             GameTooltip:AddDoubleLine(L["You have"], have, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6)
+            local places = 0
+            for _, s in ipairs(SOURCES) do if parts and (parts[s.key] or 0) > 0 then places = places + 1 end end
+            if places > 1 then
+                for _, s in ipairs(SOURCES) do
+                    local v = parts[s.key] or 0
+                    if v > 0 then GameTooltip:AddDoubleLine("  " .. L[s.text], v, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6) end
+                end
+            end
         end
         GameTooltip:AddLine(string.format(L["%s: remove"], ns.RemoveComboText()), 0.6, 0.6, 0.6)
         GameTooltip:AddLine(L["Right click: goal, order, settings"], 0.6, 0.6, 0.6)
-        if not ns.db.locked then GameTooltip:AddLine(L["Drag: move the bar"], 0.6, 0.6, 0.6) end
+        if ns.db.locked then
+            GameTooltip:AddLine(L["Drag: change the order"], 0.6, 0.6, 0.6)
+        else
+            GameTooltip:AddLine(L["Drag: move the bar"], 0.6, 0.6, 0.6)
+            GameTooltip:AddLine(L["Shift + drag: change the order"], 0.6, 0.6, 0.6)
+        end
         GameTooltip:Show()
     end
 
     local function CellMenu(cell)
         local id = cell.item.id
-        local _, index = ns.FindItem(id)
+        local _, pos = ns.FindItem(id)
         ShowMenu({
             { text = ns.ColoredName(id, cell.item.name), disabled = true },
             { text = L["Change the goal..."], func = function() ns.dialog:OpenGoal(cell, id) end },
             { text = L["Count from 0 again"], func = function() ns.RestartCount(id) end },
-            { text = L["Move left"], func = function() ns.MoveItem(id, -1) end, disabled = index == 1 },
-            { text = L["Move right"], func = function() ns.MoveItem(id, 1) end, disabled = index == #ns.Items() },
+            { text = L["Move left"], func = function() ns.MoveItem(id, -1) end, disabled = pos == 1 },
+            { text = L["Move right"], func = function() ns.MoveItem(id, 1) end, disabled = pos == #bar:Items() },
             { text = L["Remove"], func = function() ns.RemoveItem(id) end },
         })
-    end
-
-    local function TextRoom()
-        local p = ns.db.text.position
-        if p == "above" or p == "below" then return math.ceil(ns.db.text.size * 1.15) + 2 end
-        return 0
     end
 
     local function PlaceText(cell)
@@ -226,6 +365,57 @@ function ns.CreateBar()
         PlaceText(cell)
     end
 
+    -- Dragging an item to another place (instead of moving the bar).
+    local function StartReorder(cell)
+        local g = Ghost()
+        g.id = cell.item.id
+        g.icon:SetTexture(ns.ItemIcon(g.id))
+        g:SetSize(ns.db.iconSize, ns.db.iconSize)
+        g:Show()
+        cell.icon:SetAlpha(0.3)
+        HideTip(cell)
+    end
+    local function StopReorder(cell)
+        local g = Ghost()
+        if not g:IsShown() then return false end
+        g:Hide()
+        local b, pos = DropTarget(g.id)
+        if b then ns.MoveItemTo(g.id, b, pos) else ns.Refresh() end
+        return true
+    end
+
+    -- The flash when a goal is reached: a glow round the icon, pulsing.
+    local function MakeFlash(cell)
+        local glow = cell.over:CreateTexture(nil, "ARTWORK")
+        glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+        glow:SetBlendMode("ADD")
+        glow:SetVertexColor(1, 0.9, 0.3)
+        glow:SetPoint("CENTER")
+        glow:Hide()
+        local anim = glow:CreateAnimationGroup()
+        local a = anim:CreateAnimation("Alpha")
+        a:SetFromAlpha(0.2)
+        a:SetToAlpha(1)
+        a:SetDuration(0.25)
+        anim:SetLooping("BOUNCE")
+        cell.glow, cell.glowAnim = glow, anim
+    end
+
+    function bar:Flash(id)
+        for _, cell in ipairs(self.cells) do
+            if cell:IsShown() and cell.item and cell.item.id == id then
+                local size = ns.db.iconSize * 1.8
+                cell.glow:SetSize(size, size)
+                cell.glow:Show()
+                cell.glowAnim:Play()
+                C_Timer.After(ns.FLASH_TIME, function()
+                    cell.glowAnim:Stop()
+                    cell.glow:Hide()
+                end)
+            end
+        end
+    end
+
     local function Cell(i)
         local cell = CreateFrame("Button", nil, bar)
         cell:RegisterForClicks("AnyUp")
@@ -239,9 +429,19 @@ function ns.CreateBar()
         cell.over:SetAllPoints()
         cell.over:SetFrameLevel(cell:GetFrameLevel() + 2)
         cell.count = cell.over:CreateFontString(nil, "OVERLAY")
+        -- The thin progress bar along the bottom of the icon.
+        cell.progressBg = cell.over:CreateTexture(nil, "BACKGROUND")
+        cell.progressBg:SetColorTexture(0, 0, 0, 0.7)
+        cell.progressBg:SetPoint("BOTTOMLEFT")
+        cell.progressBg:SetPoint("BOTTOMRIGHT")
+        cell.progress = cell.over:CreateTexture(nil, "BORDER")
+        cell.progress:SetColorTexture(1, 1, 1, 1)
+        cell.progress:SetPoint("BOTTOMLEFT")
+        MakeFlash(cell)
         cell:SetScript("OnClick", function(self, button)
             if Dropped(self) then return end
             if not self.item then return end
+            ns.activeBar = index
             if IsRemoveClick(button) then
                 HideTip(self)
                 return ns.RemoveItem(self.item.id)
@@ -253,13 +453,33 @@ function ns.CreateBar()
             end
         end)
         cell:SetScript("OnReceiveDrag", function(self) Dropped(self) end)
-        cell:SetScript("OnDragStart", StartMoving)
-        cell:SetScript("OnDragStop", StopMoving)
+        cell:SetScript("OnDragStart", function(self)
+            if self.item and (ns.db.locked or IsShiftKeyDown()) then return StartReorder(self) end
+            StartMoving()
+        end)
+        cell:SetScript("OnDragStop", function(self)
+            if StopReorder(self) then return end
+            StopMoving()
+        end)
         cell:SetScript("OnEnter", CellTooltip)
         cell:SetScript("OnLeave", HideTip)
         StyleCell(cell)
         bar.cells[i] = cell
         return cell
+    end
+
+    local function ShowProgress(cell, n, goal, color)
+        local show = ns.db.progressBar and goal > 0
+        cell.progress:SetShown(show)
+        cell.progressBg:SetShown(show)
+        if not show then return end
+        local size = ns.db.iconSize
+        local h = math.max(2, math.floor(size / 12 + 0.5))
+        cell.progressBg:SetHeight(h)
+        local w = size * math.min(1, n / goal)
+        cell.progress:SetSize(math.max(0.01, w), h) -- a zero width shows the whole texture
+        cell.progress:SetShown(w > 0)
+        cell.progress:SetVertexColor(color[1], color[2], color[3], 1)
     end
 
     ------------------------------------------------------------------------
@@ -289,7 +509,7 @@ function ns.CreateBar()
     grip:SetScript("OnMouseUp", function()
         if not bar.sizing then return end
         bar.sizing = nil
-        SavePoint(bar)
+        SavePoint()
         ns.ApplyAll()
     end)
     grip:SetScript("OnUpdate", function()
@@ -308,12 +528,26 @@ function ns.CreateBar()
     ------------------------------------------------------------------------
     -- Layout and updates
     ------------------------------------------------------------------------
+    -- The items shown: all of them, or those whose goal isn't reached (one just reached stays while it flashes).
+    local function Visible()
+        local list, hidden, now = {}, 0, GetTime()
+        for _, item in ipairs(bar:Items()) do
+            if ns.db.hideDone and U.Reached(ns.counts[item.id] or 0, item.goal)
+                and (ns.flashUntil[item.id] or 0) <= now then
+                hidden = hidden + 1
+            else
+                list[#list + 1] = item
+            end
+        end
+        return list, hidden
+    end
+    bar.hiddenDone = 0
+
     function bar:Layout()
         local db = ns.db
         local size, gap = db.iconSize, db.spacing
         local room = TextRoom()
-        local items = ns.Items()
-        local n = #items + 1 -- the + keeps its place, seen or not, so the bar doesn't jump under the mouse
+        local n = #self.visible + 1 -- the + keeps its place, seen or not, so the bar doesn't jump under the mouse
         local cols = math.max(1, math.min(db.columns, n))
         self.cols = cols
         local rows = math.ceil(n / cols)
@@ -326,16 +560,17 @@ function ns.CreateBar()
             f:SetPoint("TOPLEFT", self, "TOPLEFT", pad + col * (size + gap), -pad - top - row * (rowH + gap))
             f:SetSize(size, size)
         end
-        for i = 1, #items do Place(self.cells[i], i) end
+        for i = 1, #self.visible do Place(self.cells[i], i) end
         Place(plus, n)
         plus:Style(size)
         self:SetSize(pad * 2 + cols * size + (cols - 1) * gap, pad * 2 + rows * rowH + (rows - 1) * gap)
     end
 
     function bar:Update()
-        local items = ns.Items()
+        if not self:Data() then return self:Hide() end
         local t = ns.db.text
-        for i, item in ipairs(items) do
+        self.visible, self.hiddenDone = Visible()
+        for i, item in ipairs(self.visible) do
             local cell = self.cells[i] or Cell(i)
             cell.item = item
             cell.icon:SetTexture(ns.ItemIcon(item.id))
@@ -344,13 +579,14 @@ function ns.CreateBar()
             cell.count:SetText(U.FormatCount(n, item.goal, t.format))
             local c = done and t.doneColor or t.color
             cell.count:SetTextColor(c[1], c[2], c[3], c[4] or 1)
+            ShowProgress(cell, n, item.goal, c)
             local missing = ns.db.dimMissing and (ns.have[item.id] or 0) == 0
             cell.icon:SetDesaturated(missing)
-            cell.icon:SetAlpha(missing and 0.5 or 1)
+            cell.icon:SetAlpha((missing or (ghost and ghost:IsShown() and ghost.id == item.id)) and 0.5 or 1)
             cell:Show()
             if GameTooltip:IsOwned(cell) then CellTooltip(cell) end
         end
-        for i = #items + 1, #self.cells do
+        for i = #self.visible + 1, #self.cells do
             self.cells[i]:Hide()
             self.cells[i].item = nil
         end
@@ -359,6 +595,7 @@ function ns.CreateBar()
     end
 
     function bar:ApplySettings()
+        if not self:Data() then return self:Hide() end
         for _, cell in ipairs(self.cells) do StyleCell(cell) end
         if ns.db.background > 0 then
             self:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
@@ -366,7 +603,7 @@ function ns.CreateBar()
         else
             self:SetBackdrop(nil)
         end
-        ApplyPoint(self)
+        ApplyPoint()
         self:UpdateVisibility()
         self:Update()
     end
@@ -374,17 +611,18 @@ function ns.CreateBar()
     -- Hidden by /ic hide, or in combat when set. `inCombat` comes from the combat events.
     function bar:UpdateVisibility(inCombat)
         if inCombat == nil then inCombat = InCombatLockdown() end
-        self:SetShown(not ns.db.hidden and not (ns.db.hideInCombat and inCombat))
+        self:SetShown(self:Data() ~= nil and not ns.db.hidden and not (ns.db.hideInCombat and inCombat))
     end
 
     -- Under the mouse: full opacity, the + and the resize corner show.
     function bar:UpdateHover(force)
-        local over = self:IsMouseOver(6, -14, -6, 14) or (ns.Menu:IsShown()) or self.sizing ~= nil
-            or (ns.dialog:IsShown())
+        local over = self:IsMouseOver(6, -14, -6, 14) or (ns.Menu:IsShown() and ns.activeBar == index)
+            or self.sizing ~= nil or (ns.dialog:IsShown() and ns.activeBar == index)
+            or (ghost ~= nil and ghost:IsShown())
         if over == self.over and not force then return end
         self.over = over
         self:SetAlpha(over and 1 or ns.db.alpha)
-        local showPlus = ns.db.plusButton == "always" or over or #ns.Items() == 0
+        local showPlus = ns.db.plusButton == "always" or over or #self.visible == 0
         plus:SetAlpha(showPlus and (plus:IsMouseOver() and 1 or IDLE_PLUS_ALPHA) or 0)
         grip:SetShown(over and not ns.db.locked)
     end

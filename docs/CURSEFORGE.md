@@ -19,15 +19,23 @@ you still need. When you have enough, the number changes color and a sound plays
 - **Add an item**: click the + and type a few letters. Suggestions show as you type, with icons: items in your
   bags first, then items you've seen, then every item the game knows. Or shift-click an item, or drop one from
   your bags on the +.
-- **Set a goal**: how many to collect. 0 just counts.
+- **Set a goal**: how many to collect. 0 just counts. Only what you collect after adding the item counts.
+- **Pace**: the tooltip shows how many you collect in an hour and when you reach the goal at that pace.
 - **Big, clear numbers** above, below or on the icon. Pick the font, outline, size and colors, and what it shows:
   the count (12), the count with the goal (12/20), or how many are still missing (8).
-- **Goal reached**: the number changes color and a sound plays: a game sound, one from LibSharedMedia, or your
-  own file. A chat line too, if you like.
+- **Goal reached**: the number changes color, the icon flashes and a sound plays: a game sound, one from
+  LibSharedMedia, or your own file. A chat line too, if you like. Items whose goal is reached can leave the bar.
+- **A thin progress bar** on the icon, if you like.
 - **Ctrl + left click** takes an item off the bar. Pick other keys or another mouse button in the settings.
-- **Right click** on an item: change its goal, move it left or right, lock the bar, settings.
-- **Drag** any icon or the + to move the bar, its bottom-right corner to resize the icons.
-- **Minimap button**: click for the settings, right-click to show or hide the bar.
+- **Right click** on an item: change its goal, count from 0 again, move it left or right, lock the bars, settings.
+- **Drag** any icon or the + to move the bar, its bottom-right corner to resize the icons. **Shift + drag** an
+  icon to put it in another place, on this bar or another one.
+- **Several bars**: right-click the + for a new bar or to copy another character's items.
+- **Crafting**: a button in the profession window puts the reagents of the recipe on the bar, as many as your
+  crafts need, minus what you have.
+- **Syndicator**: the mail and your other characters' bags, bank and mail can count too.
+- **Minimap button**: click for the settings, right-click to show or hide the bars. It's a standard LibDBIcon
+  button when another addon brought the library, so button collectors and Titan Panel or ElvUI know it.
 
 ## Settings (`/ic`)
 
@@ -35,15 +43,17 @@ Items in a row, icon size and spacing, opacity while the mouse is away, a backgr
 mouse, counting the bank, greying out items you don't have, hiding in combat, the language (English or
 Ukrainian).
 
-The items on the bar are kept for each character; the look and the sound are shared by all of them.
+The bars and their items are kept for each character; the look and the sound are shared by all of them.
 
 ## Commands
 
 - `/ic`: settings
 - `/ic add [item]`: add an item (name, ID or link)
-- `/ic lock`, `/ic unlock`: lock or unlock the bar
-- `/ic show`, `/ic hide`: show or hide the bar
-- `/ic reset`: put the bar back in the middle of the screen
+- `/ic recipe`: the reagents of the recipe open in the profession window
+- `/ic bar`: a new bar
+- `/ic lock`, `/ic unlock`: lock or unlock the bars
+- `/ic show`, `/ic hide`: show or hide the bars
+- `/ic reset`: put the bars back in the middle of the screen
 - `/ic minimap`: show or hide the minimap button
 
 ## Your own sounds

@@ -4,6 +4,31 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Pace**: an item's tooltip shows how many you collect in an hour and how soon you reach the goal at that pace.
+- **Several bars**: right-click the **+** and pick **New bar** (or type `/ic bar`). Each bar keeps its own items
+  and place; **Remove this bar** takes one away.
+- **Changing the order by dragging**: Shift + drag an item onto another one, on the same bar or another bar.
+  On locked bars a plain drag does it.
+- **Goal reached**: the icon flashes, and items whose goal is reached can leave the bar (the + menu or the
+  settings). The + tooltip says how many are hidden.
+- **A thin progress bar** on the icon, if you like it more than a number or along with it.
+- **Copying another character's items**: right-click the **+**, **Copy from another character...**. Each
+  character's list is kept when they log out.
+- **A recipe's reagents**: a button with the addon's logo in the profession window (or `/ic recipe`). Say how
+  many crafts: reagents you don't have enough of go on the bar with what's missing as their goal, and an item
+  on a bar already gets them added to its goal.
+- **Syndicator**: the mail and your other characters' bags, bank and mail can count too (Settings → What
+  counts).
+- The minimap button is a standard LibDBIcon button when another addon brought the library: button collectors
+  such as Leatrix Plus take it like any other, and Titan Panel or ElvUI can show it.
+
+### Changed
+- On Retail the bank counts the reagent bank and the warband bank too.
+- When you change what counts (the bank, the mail), the numbers go on from where they were.
+
 ## [0.1.0-beta2] - 2026-11-13
 
 ### Fixed

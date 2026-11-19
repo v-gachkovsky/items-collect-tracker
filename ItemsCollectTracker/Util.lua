@@ -121,3 +121,48 @@ function U.FormatCount(count, goal, format)
 end
 
 function U.Reached(count, goal) return goal and goal > 0 and count >= goal or false end
+
+------------------------------------------------------------------------
+-- How fast an item comes in
+------------------------------------------------------------------------
+U.RATE_WINDOW = 3600     -- gains older than this (seconds) don't count
+U.RATE_MIN_SPAN = 300    -- a burst of loot right now doesn't make an hourly rate on its own
+
+-- gains = { { t = seconds, d = how many came }, ... } in time order. How many come in an hour at the pace of
+-- the last hour, or nil before anything came.
+function U.Rate(gains, now)
+    local total, first = 0, nil
+    for _, g in ipairs(gains) do
+        if now - g.t <= U.RATE_WINDOW then
+            total = total + g.d
+            first = first or g.t
+        end
+    end
+    if total <= 0 then return nil end
+    return total * 3600 / math.max(now - first, U.RATE_MIN_SPAN)
+end
+
+-- Drops the gains too old to count.
+function U.PruneGains(gains, now)
+    while gains[1] and now - gains[1].t > U.RATE_WINDOW do table.remove(gains, 1) end
+end
+
+-- Seconds as whole hours and minutes, rounded up to a minute: 3700 -> 1, 2.
+function U.SplitDuration(seconds)
+    local minutes = math.max(1, math.ceil(seconds / 60))
+    return math.floor(minutes / 60), minutes % 60
+end
+
+-- Where to put an item dragged from position `from` onto the one at `to` in the same list: it takes that
+-- place and the rest move along.
+function U.MoveInList(list, from, to)
+    if from == to or not list[from] then return end
+    local entry = table.remove(list, from)
+    table.insert(list, math.max(1, math.min(to, #list + 1)), entry)
+end
+
+-- What's counted, as a short key: "b" bags, "k" bank, "m" mail, "a" other characters. An item remembers the
+-- key it was counted with, so it can go on from its count when the settings change.
+function U.SourceKey(bank, mail, alts)
+    return "b" .. (bank and "k" or "") .. (mail and "m" or "") .. (alts and "a" or "")
+end

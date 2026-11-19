@@ -17,6 +17,7 @@ Search.lua
 Popup.lua
 Menu.lua
 AddDialog.lua
+Recipe.lua
 Bar.lua
 MinimapButton.lua
 Options.lua

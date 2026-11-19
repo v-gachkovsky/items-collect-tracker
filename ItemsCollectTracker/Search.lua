@@ -207,7 +207,7 @@ function S.Init()
     for id, name in pairs(ns.db.known) do
         if type(id) == "number" and type(name) == "string" then Add(id, name, true) end
     end
-    for _, item in ipairs(ns.char.items) do
+    for item in ns.EachItem() do
         if item.name then Add(item.id, item.name, true) end
     end
     ScanInventory()

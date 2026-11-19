@@ -327,7 +327,7 @@ function BuildContent()
     local db = ns.db
     local function T(key) return function() return db.text[key] end, function(v) db.text[key] = v end end
 
-    Header("Bar")
+    Header("Bars")
     Select("Language", ns.LANGUAGES, function() return db.locale end, function(v)
         db.locale = v
         C_Timer.After(0, function()
@@ -336,12 +336,12 @@ function BuildContent()
             Changed()
         end)
     end)
-    Check("Lock the bar (no moving, no resizing)", function() return db.locked end, function(v) db.locked = v end)
+    Check("Lock the bars (no moving, no resizing; drag an item to change the order)", function() return db.locked end,
+        function(v) db.locked = v end)
     Check("Minimap button", function() return db.minimapButton end, function(v) db.minimapButton = v end)
     Check("Hide the bar in combat", function() return db.hideInCombat end, function(v) db.hideInCombat = v end)
     Check("Grey out items you have none of", function() return db.dimMissing end, function(v) db.dimMissing = v end)
-    Check("Count the bank too", function() return db.includeBank end, function(v) db.includeBank = v end)
-    Note("The game knows what's in your bank after you open it once.")
+    Check("Hide items whose goal is reached", function() return db.hideDone end, function(v) db.hideDone = v end)
     Select("The + button", PLUS_MODES, function() return db.plusButton end, function(v) db.plusButton = v end)
     Slider("Icon size", 16, 96, 1, function() return db.iconSize end, function(v) db.iconSize = v end)
     Slider("Space between icons", 0, 30, 1, function() return db.spacing end, function(v) db.spacing = v end)
@@ -350,7 +350,27 @@ function BuildContent()
         function(v) db.alpha = v end, 100)
     Slider("Background, %", 0, 100, 5, function() return db.background end,
         function(v) db.background = v end, 100)
-    Note("Drag any icon or the + to move the bar, its bottom right corner to resize it. Right-click for the menu.")
+    Note("Drag any icon or the + to move the bar, its bottom right corner to resize it. Shift + drag an icon " ..
+        "(or just drag it on locked bars) to put it in another place, on this bar or another one. Right-click " ..
+        "the + for more bars and for copying another character's items.")
+
+    Header("What counts")
+    Check("The bank", function() return db.includeBank end, function(v) db.includeBank = v end)
+    Note("The game knows what's in your bank after you open it once.")
+    Check("The mail (with Syndicator)", function() return db.countMail end, function(v) db.countMail = v end)
+    Check("Your other characters: bags, bank and mail (with Syndicator)", function() return db.countAlts end,
+        function(v) db.countAlts = v end)
+    local syn = Label("")
+    syn:SetWidth(WIDTH - LEFT - 20)
+    syn:SetJustifyH("LEFT")
+    refreshers[#refreshers + 1] = function()
+        syn:SetText(ns.HasSyndicator() and L["Syndicator is here: it remembers the mail and your other characters."]
+            or L["Syndicator isn't installed: without it the mail and other characters don't count."])
+        syn:SetTextColor(ns.HasSyndicator() and 0.5 or 1, ns.HasSyndicator() and 0.8 or 0.6, ns.HasSyndicator() and 0.5 or 0.3)
+    end
+    y = y - 22
+    Note("Only what comes after an item is added counts. When you change what counts, its number goes on from " ..
+        "where it was.")
 
     Header("Number")
     Select("Where", POSITIONS, T("position"))
@@ -360,8 +380,10 @@ function BuildContent()
     Slider("Size", 8, 48, 1, T("size"))
     Color("Color", T("color"))
     Color("Color when the goal is reached", T("doneColor"))
+    Check("A thin progress bar on the icon", function() return db.progressBar end, function(v) db.progressBar = v end)
 
     Header("Goal reached")
+    Check("The icon flashes", function() return db.flash end, function(v) db.flash = v end)
     Check("Play a sound", function() return db.sound end, function(v) db.sound = v end)
     Select("Sound", ns.GetSoundList, function() return db.soundName end, function(v) db.soundName = v end,
         { text = "Test", onClick = function()
@@ -392,9 +414,9 @@ function BuildContent()
         "removes the item instead of opening its menu.")
 
     Header("Reset")
-    Button("Put the bar in the middle", function()
-        db.point, db.hidden = nil, false
-        Changed()
+    Button("Put the bars in the middle", function()
+        ns.ResetPositions()
+        Refresh()
     end)
     Button("Reset all settings", ConfirmReset, LEFT + 200)
     y = y - 34

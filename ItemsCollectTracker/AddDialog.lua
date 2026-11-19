@@ -165,6 +165,11 @@ end
 
 function D:Confirm()
     if self.step == "name" then return ConfirmName() end
+    if self.step == "recipe" then
+        local recipe = self.recipe
+        self:Hide()
+        return ns.AddReagents(recipe, goalBox:GetText(), ns.activeBar)
+    end
     local id = self.itemID
     local isNew = not ns.FindItem(id)
     ns.SetItem(id, goalBox:GetText())
@@ -222,6 +227,27 @@ function D:OpenGoal(anchor, id)
     ShowGoalStep(id)
 end
 
+-- A recipe's reagents: how many crafts. recipe = { name, icon, reagents = { { id, count } } }.
+function D:OpenRecipe(anchor, recipe, times)
+    Place(anchor)
+    self:Show()
+    Popup:Hide()
+    D.step, D.itemID, D.recipe = "recipe", nil, recipe
+    SetSlot(nil)
+    slot.plus:Hide()
+    slot.icon:Show()
+    slot.icon:SetTexture(recipe.icon or ns.ItemIcon(recipe.reagents[1].id))
+    title:SetText(recipe.name or "?")
+    nameBox:Hide()
+    goalBox:Show(); okButton:Show()
+    okButton:SetText(ADD or "Add")
+    goalBox:SetText(tostring(times or 1))
+    SetNote(string.format(L["How many times will you craft it? Its %d reagents go on the bar: those you have enough of stay off, and an item on a bar already gets them added to its goal."],
+        #recipe.reagents))
+    goalBox:SetFocus()
+    goalBox:HighlightText()
+end
+
 ------------------------------------------------------------------------
 -- Name box: suggestions while typing
 ------------------------------------------------------------------------
@@ -270,11 +296,16 @@ goalBox:SetScript("OnEscapePressed", function() D:Hide() end)
 slot:SetScript("OnReceiveDrag", Dropped)
 slot:SetScript("OnClick", function()
     if Dropped() then return end
-    if D.step == "goal" then ShowNameStep() end -- another item
+    if D.step == "goal" then ShowNameStep() end -- another item (a recipe stays)
 end)
 slot:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    if D.itemID then
+    if D.step == "recipe" and D.recipe then
+        GameTooltip:SetText(D.recipe.name or "?")
+        for _, r in ipairs(D.recipe.reagents) do
+            GameTooltip:AddDoubleLine(ns.ColoredName(r.id), r.count, 1, 1, 1, 1, 1, 1)
+        end
+    elseif D.itemID then
         GameTooltip:SetItemByID(D.itemID)
         GameTooltip:AddLine(L["Click to pick another item"], 0.6, 0.6, 0.6)
     else

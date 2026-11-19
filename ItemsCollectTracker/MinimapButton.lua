@@ -58,15 +58,20 @@ local function FollowCursor()
     Place()
 end
 
+local function TooltipLines(tip)
+    tip:AddLine("Items Collect Tracker", 1, 1, 1)
+    tip:AddLine(L["Click: settings"], 0.8, 0.8, 0.8)
+    tip:AddLine(ns.db.hidden and L["Right click: show the bars"] or L["Right click: hide the bars"], 0.8, 0.8, 0.8)
+    tip:AddLine(L["Drag: move the button"], 0.8, 0.8, 0.8)
+end
+
 local function Tooltip(self)
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-    GameTooltip:AddLine("Items Collect Tracker", 1, 1, 1)
-    GameTooltip:AddLine(L["Click: settings"], 0.8, 0.8, 0.8)
-    GameTooltip:AddLine(ns.db.hidden and L["Right click: show the bar"] or L["Right click: hide the bar"], 0.8, 0.8, 0.8)
-    GameTooltip:AddLine(L["Drag: move the button"], 0.8, 0.8, 0.8)
+    TooltipLines(GameTooltip)
     GameTooltip:Show()
 end
 
+-- Shows or hides every bar.
 function ns.ToggleBar()
     ns.db.hidden = not ns.db.hidden
     ns.ApplyAll()
@@ -117,9 +122,69 @@ local function Create()
     Minimap:HookScript("OnSizeChanged", Place) -- addons that resize the minimap
 end
 
+------------------------------------------------------------------------
+-- LibDataBroker and LibDBIcon, when another addon brought them: a standard button that button collectors
+-- (Leatrix Plus, MinimapButtonBag...) and bars (Titan Panel, ElvUI...) know
+------------------------------------------------------------------------
+local BROKER = "ItemsCollectTracker"
+local brokerObject, iconRegistered
+
+local function Lib(name)
+    return LibStub and LibStub(name, true)
+end
+
+local function OnBrokerClick(_, mouse)
+    if mouse == "RightButton" then ns.ToggleBar() else ns.ToggleOptions() end
+end
+
+local function Broker()
+    if brokerObject then return brokerObject end
+    local ldb = Lib("LibDataBroker-1.1")
+    if not ldb then return nil end
+    brokerObject = ldb:GetDataObjectByName(BROKER) or ldb:NewDataObject(BROKER, {
+        type = "launcher",
+        label = "Items Collect Tracker",
+        icon = ns.LOGO,
+        OnClick = OnBrokerClick,
+        OnTooltipShow = TooltipLines,
+    })
+    return brokerObject
+end
+
+-- The whole logo with its gold ring, as on our own button: no extra border, no background.
+local function RestyleIconButton(b)
+    if not b then return end
+    if b.border then b.border:Hide() end
+    if b.background then b.background:Hide() end
+    if b.icon then
+        b.icon:ClearAllPoints()
+        b.icon:SetAllPoints()
+    end
+end
+
+-- True when LibDBIcon shows the button.
+local function UpdateLibIcon()
+    local icon = Lib("LibDBIcon-1.0")
+    local object = icon and Broker()
+    if not object then return false end
+    local db = ns.db.minimapIcon
+    db.hide = not ns.db.minimapButton
+    db.minimapPos = db.minimapPos or ns.db.minimapAngle -- where our own button was
+    if not iconRegistered then
+        if not (icon.IsRegistered and icon:IsRegistered(BROKER)) then icon:Register(BROKER, object, db) end
+        iconRegistered = true
+        RestyleIconButton(icon:GetMinimapButton(BROKER))
+    end
+    icon:Refresh(BROKER, db)
+    if button then button:Hide() end -- our own one, made before the library came
+    return true
+end
+
 -- On login (addons that reshape the minimap have done it by then) and when the setting changes.
 function MinimapButton.Update()
     if not Minimap then return end
+    Broker()
+    if UpdateLibIcon() then return end
     if not button then
         if not ns.db.minimapButton then return end -- hidden: not even made
         Create()

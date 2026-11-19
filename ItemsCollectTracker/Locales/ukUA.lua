@@ -18,8 +18,6 @@ ns.LOCALES.ukUA = {
     ["added %s%s."] = "додано %s%s.",
 
     -- The bar
-    ["Unlock the bar"] = "Відкріпити панель",
-    ["Lock the bar"] = "Закріпити панель",
     ["Settings"] = "Налаштування",
     ["Click: type a name. Or drop an item from your bags here."] =
         "Клацніть, щоб ввести назву. Або перетягніть сюди предмет із сумки.",
@@ -41,23 +39,15 @@ ns.LOCALES.ukUA = {
     ["settings"] = "налаштування",
     ["item"] = "предмет",
     ["add an item"] = "додати предмет",
-    ["lock or unlock the bar"] = "закріпити або відкріпити панель",
-    ["show or hide the bar"] = "показати або сховати панель",
-    ["put the bar back in the middle of the screen"] = "повернути панель у центр екрана",
     ["show or hide the minimap button"] = "показати або сховати кнопку біля мінімапи",
 
     -- Minimap button
     ["Click: settings"] = "Клік: налаштування",
-    ["Right click: show the bar"] = "Правий клік: показати панель",
-    ["Right click: hide the bar"] = "Правий клік: сховати панель",
     ["Drag: move the button"] = "Перетягування: рухати кнопку",
     ["Minimap button"] = "Кнопка біля мінімапи",
     ["goal reached: %s x%d."] = "мету досягнуто: %s x%d.",
     ["removed %s."] = "прибрано %s.",
     ["commands:"] = "команди:",
-    ["bar locked."] = "панель закріплено.",
-    ["bar unlocked: drag an item to move it, the corner to resize."] =
-        "панель відкріплено: тягніть предмет, щоб рухати, і кут, щоб змінити розмір.",
     ["settings reset."] = "налаштування скинуто.",
     ["can't play %s. A new file needs a full restart of the game."] =
         "не вдається відтворити %s. Новий файл потребує повного перезапуску гри.",
@@ -90,12 +80,9 @@ ns.LOCALES.ukUA = {
         "Скинути всі налаштування до початкових? Предмети на панелі залишаться.",
     ["Open settings (/ic)"] = "Відкрити налаштування (/ic)",
     ["Now: %s on an item takes it off the bar."] = "Зараз: %s на предметі прибирає його з панелі.",
-    ["Bar"] = "Панель",
     ["Language"] = "Мова",
-    ["Lock the bar (no moving, no resizing)"] = "Закріпити панель (не рухати й не змінювати розмір)",
     ["Hide the bar in combat"] = "Ховати панель у бою",
     ["Grey out items you have none of"] = "Сірі іконки для предметів, яких немає",
-    ["Count the bank too"] = "Рахувати й банк",
     ["The game knows what's in your bank after you open it once."] =
         "Гра знає, що у вашому банку, після того як ви раз його відкриєте.",
     ["The + button"] = "Кнопка +",
@@ -104,8 +91,6 @@ ns.LOCALES.ukUA = {
     ["Items in a row"] = "Предметів у рядку",
     ["Opacity when the mouse is away, %"] = "Непрозорість без миші, %",
     ["Background, %"] = "Тло, %",
-    ["Drag any icon or the + to move the bar, its bottom right corner to resize it. Right-click for the menu."] =
-        "Тягніть будь-яку іконку або +, щоб рухати панель, і її правий нижній кут, щоб змінити розмір. Правий клік - меню.",
     ["Number"] = "Число",
     ["Where"] = "Де",
     ["Shows"] = "Що показує",
@@ -127,7 +112,6 @@ ns.LOCALES.ukUA = {
     ["Exactly these keys: with Ctrl set, Ctrl+Shift+click doesn't remove. A plain right click set here removes the item instead of opening its menu."] =
         "Саме ці клавіші: якщо вибрано Ctrl, то Ctrl+Shift+клік не прибирає. Якщо вибрати простий правий клік, він прибиратиме предмет замість меню.",
     ["Reset"] = "Скидання",
-    ["Put the bar in the middle"] = "Панель у центр",
     ["Reset all settings"] = "Скинути всі налаштування",
     ["Only under the mouse"] = "Лише під мишею",
     ["Always"] = "Завжди",
@@ -144,4 +128,67 @@ ns.LOCALES.ukUA = {
     ["Left click"] = "Лівий клік",
     ["Right click"] = "Правий клік",
     ["Middle click"] = "Середній клік",
+
+    -- 0.1.0-beta3
+    ["%d h %d min"] = "%d год %d хв",
+    ["%d min"] = "%d хв",
+    ["%s x%d: %d reagents added, %d goals raised."] =
+        "%s x%d: додано реагентів: %d, збільшено мет: %d.",
+    ["A thin progress bar on the icon"] = "Тонка смужка прогресу на іконці",
+    ["Bars"] = "Панелі",
+    ["Copy from another character..."] = "Скопіювати з іншого персонажа...",
+    ["Copy the items of"] = "Скопіювати предмети персонажа",
+    ["Drag any icon or the + to move the bar, its bottom right corner to resize it. Shift + drag an icon (or just drag it on locked bars) to put it in another place, on this bar or another one. Right-click the + for more bars and for copying another character's items."] =
+        "Тягніть будь-яку іконку або +, щоб рухати панель, а її правий нижній кут, щоб змінити розмір. Shift + перетягування іконки (або просто перетягування на закріплених панелях) ставить її в інше місце, на цій панелі чи на іншій. Правий клік на + додає панелі й копіює предмети іншого персонажа.",
+    ["Drag: change the order"] = "Перетягування: змінити порядок",
+    ["Goal in"] = "До мети",
+    ["Hide items whose goal is reached"] = "Ховати предмети, мету яких досягнуто",
+    ["How many times will you craft it? Its %d reagents go on the bar: those you have enough of stay off, and an item on a bar already gets them added to its goal."] =
+        "Скільки разів будете крафтити? %d реагентів піде на панель: яких вистачає, ті не додаються, а предмету, що вже на панелі, вони додаються до мети.",
+    ["In the bags"] = "У сумках",
+    ["In the bank"] = "У банку",
+    ["In the mail"] = "На пошті",
+    ["Items whose goal is reached, hidden: %d"] = "Сховано предметів із досягнутою метою: %d",
+    ["Lock the bars"] = "Закріпити панелі",
+    ["Unlock the bars"] = "Відкріпити панелі",
+    ["Lock the bars (no moving, no resizing; drag an item to change the order)"] =
+        "Закріпити панелі (не рухати й не змінювати розмір; перетягування предмета змінює порядок)",
+    ["New bar"] = "Нова панель",
+    ["Only what comes after an item is added counts. When you change what counts, its number goes on from where it was."] =
+        "Рахується лише те, що прийшло після додавання предмета. Якщо змінити, що рахується, число продовжить з того, де було.",
+    ["Other characters"] = "Інші персонажі",
+    ["Per hour"] = "За годину",
+    ["Put the bars in the middle"] = "Поставити панелі в центр",
+    ["Put the reagents of this recipe on the bar."] = "Поставити реагенти цього рецепта на панель.",
+    ["Reagents of the open recipe..."] = "Реагенти відкритого рецепта...",
+    ["Remove this bar"] = "Прибрати цю панель",
+    ["Remove this bar and its %d items?"] = "Прибрати цю панель разом з її предметами (%d)?",
+    ["Right click: hide the bars"] = "Правий клік: сховати панелі",
+    ["Right click: show the bars"] = "Правий клік: показати панелі",
+    ["Shift + drag: change the order"] = "Shift + перетягування: змінити порядок",
+    ["Show items whose goal is reached"] = "Показувати предмети, мету яких досягнуто",
+    ["Syndicator is here: it remembers the mail and your other characters."] =
+        "Syndicator є: він пам'ятає пошту й інших персонажів.",
+    ["Syndicator isn't installed: without it the mail and other characters don't count."] =
+        "Syndicator не встановлено: без нього пошта й інші персонажі не рахуються.",
+    ["The bank"] = "Банк",
+    ["The icon flashes"] = "Іконка спалахує",
+    ["The mail (with Syndicator)"] = "Пошта (з Syndicator)",
+    ["What counts"] = "Що рахувати",
+    ["Your other characters: bags, bank and mail (with Syndicator)"] =
+        "Інші персонажі: сумки, банк і пошта (з Syndicator)",
+    ["a new bar"] = "нова панель",
+    ["bars locked: drag an item to change the order."] =
+        "панелі закріплено: перетягуйте предмет, щоб змінити порядок.",
+    ["bars unlocked: drag an item to move its bar, the corner to resize."] =
+        "панелі відкріплено: тягніть предмет, щоб рухати панель, кут, щоб змінити розмір.",
+    ["copied %d items from %s."] = "скопійовано предметів: %d, від %s.",
+    ["lock or unlock the bars"] = "закріпити або відкріпити панелі",
+    ["open a profession window and pick a recipe first."] =
+        "спершу відкрийте вікно професії й виберіть рецепт.",
+    ["put the bars back in the middle of the screen"] = "повернути панелі в центр екрана",
+    ["show or hide the bars"] = "показати або сховати панелі",
+    ["the reagents of the recipe open in the profession window"] =
+        "реагенти рецепта, відкритого у вікні професії",
+    ["you have enough already: %s."] = "вже вистачає: %s.",
 }

@@ -111,13 +111,17 @@ _G.GetCursorPosition = function() return 600, 400 end
 _G.GetCursorInfo = function() return nil end
 _G.ClearCursor = function() end
 _G.InCombatLockdown = function() return false end
-_G.IsShiftKeyDown = function() return false end
+_G.IsShiftKeyDown = function() return _G.shiftDown or false end
 _G.IsAltKeyDown = function() return false end
 _G.IsControlKeyDown = function() return _G.ctrlDown or false end
 _G.IsMetaKeyDown = function() return false end
 _G.IsMacClient = function() return true end
 _G.IsModifiedClick = function() return false end
 _G.STANDARD_TEXT_FONT = "Fonts\\FRIZQT__.TTF"
+_G.UnitName = function() return "Me" end
+_G.GetRealmName = function() return "Realm" end
+_G.UnitClass = function() return "Mage", "MAGE" end
+_G.RAID_CLASS_COLORS = { MAGE = { colorStr = "ff3fc7eb" } }
 _G.ITEM_QUALITY_COLORS = { [1] = { hex = "|cffffffff" } }
 _G.SOUNDKIT = { IG_QUEST_LIST_COMPLETE = 878 }
 _G.PlaySound = function(id) played[#played + 1] = id; return true end
@@ -130,7 +134,10 @@ _G.Settings = {
     RegisterAddOnCategory = function() end,
 }
 _G.C_Item = {
-    GetItemCount = function(id) return bags[id] or 0 end,
+    GetItemCount = function(id, ...)
+        _G.lastCountArgs = { id, ... }
+        return bags[id] or 0
+    end,
     GetItemInfoInstant = function(id)
         if itemNames[id] then return id, "Trade Goods", "Cloth", "", 132889 + id end
     end,
@@ -184,10 +191,17 @@ local function check(name, cond)
     io.write("ok  ", name, "\n")
 end
 
+-- Saved by 0.1.0-beta2: one list of items, a start for the bags and one for the bank.
+_G.ItemsCollectTrackerDB = { point = { "TOPLEFT", "CENTER", 10, 20 } }
+_G.ItemsCollectTrackerCharDB = { items = { { id = 4306, goal = 5, name = "Silk Cloth", start = 3, startBank = 8 } } }
 Fire("ADDON_LOADED", "ItemsCollectTracker")
 Fire("PLAYER_LOGIN")
 RunTimers()
 check("bar created", ns.bar ~= nil)
+local old = ns.Items()[1]
+check("old list is the first bar", #ns.Bars() == 1 and ns.char.items == nil and old and old.id == 4306)
+check("old start kept", old.key == "b" and old.startBank == nil and ns.char.bars[1].point[3] == 10)
+ns.RemoveItem(4306)
 check("starts empty", #ns.Items() == 0)
 check("remembered bag item", ns.db.known[2589] == "Linen Cloth")
 local mm = ItemsCollectTrackerMinimapButton
@@ -272,6 +286,160 @@ _G.ctrlDown = false
 check("removed by ctrl+click", #ns.Items() == 1 and ns.Items()[1].id == 2589)
 ns.bar.cells[1]._scripts.OnClick(ns.bar.cells[1], "LeftButton")
 check("plain click keeps it", #ns.Items() == 1)
+
+-- Pace: how many come in an hour, and when the goal is reached at that pace.
+ns.SetItem(2592, 20)
+BagsChange(2592, 5)
+time = time + 600
+BagsChange(2592, 10)
+local rate, eta = ns.Pace(2592)
+check("pace per hour", rate and math.abs(rate - 60) < 0.01)
+check("time to the goal", eta and math.abs(eta - 600) < 0.01)
+ns.bar.cells[2]._scripts.OnEnter(ns.bar.cells[2])
+check("tooltip with the pace", GameTooltip:IsOwned(ns.bar.cells[2]))
+
+-- A goal reached: the icon flashes; with "hide items whose goal is reached" it leaves after the flash.
+ns.db.hideDone = true
+ns.ApplyAll()
+BagsChange(2592, 20)
+local function CellOf(bar, id)
+    for _, c in ipairs(bar.cells) do if c:IsShown() and c.item and c.item.id == id then return c end end
+end
+-- Linen Cloth reached its goal before: it's hidden at once.
+check("goal reached flashes", ns.flashUntil[2592] ~= nil and CellOf(ns.bar, 2592).glow:IsShown())
+check("still there while it flashes", #ns.bar.visible == 1 and ns.bar.hiddenDone == 1)
+time = time + 3
+RunTimers()
+RunTimers()
+check("gone after the flash", #ns.bar.visible == 0 and ns.bar.hiddenDone == 2)
+ns.bar.plus._scripts.OnEnter(ns.bar.plus)
+ns.db.hideDone = false
+ns.ApplyAll()
+check("back when shown again", #ns.bar.visible == 2)
+
+-- The thin progress bar.
+ns.db.progressBar = true
+ns.ApplyAll()
+check("progress bar", ns.bar.cells[2].progress:IsShown())
+ns.db.progressBar = false
+ns.ApplyAll()
+
+-- More bars; shift + drag takes an item to another bar, a plain drag on locked bars changes the order.
+check("second bar", ns.AddBar() == 2 and #ns.bars == 2 and ns.bars[2]:IsShown())
+ns.SetItem(14047, 3, 2)
+check("item on the second bar", ns.Items(2)[1].id == 14047)
+local function DragOnto(from, to)
+    from._scripts.OnDragStart(from)
+    to.IsMouseOver = function() return true end
+    from._scripts.OnDragStop(from)
+    to.IsMouseOver = nil
+end
+_G.shiftDown = true
+DragOnto(ns.bar.cells[1], ns.bars[2].cells[1])
+_G.shiftDown = false
+check("dragged to the other bar", #ns.Items(1) == 1 and ns.Items(2)[1].id == 2589 and ns.Items(2)[2].id == 14047)
+ns.db.locked = true
+DragOnto(ns.bars[2].cells[1], ns.bars[2].cells[2])
+ns.db.locked = false
+check("locked: a drag changes the order", ns.Items(2)[1].id == 14047 and ns.Items(2)[2].id == 2589)
+ns.bars[2].plus._scripts.OnClick(ns.bars[2].plus, "RightButton")
+check("bar menu", ns.Menu:IsShown())
+ns.Menu:Hide()
+ns.RemoveBar(2)
+check("bar removed with its items", #ns.Bars() == 1 and not ns.bars[2]:IsShown() and not ns.FindItem(14047))
+
+-- Another character's list.
+ns.db.lists["Alt - Realm"] = { class = "MAGE", items = { { id = 4306, goal = 7, name = "Silk Cloth" } } }
+check("other characters' lists", #ns.OtherLists() == 1 and ns.OtherLists()[1].key == "Alt - Realm")
+ns.CopyList("Alt - Realm", 1)
+check("copied with its goal", ns.FindItem(4306) and ns.FindItem(4306).goal == 7)
+ns.RemoveItem(4306)
+Fire("PLAYER_LOGOUT")
+check("own list kept for the others", ns.db.lists["Me - Realm"] and #ns.db.lists["Me - Realm"].items == 1)
+
+-- A recipe's reagents from the profession window (the old window of Forever and Classic).
+local reagents = { { 2592, 2 }, { 14047, 1 }, { 2589, 1 } }
+_G.TradeSkillFrame = newMock("Frame")
+_G.TradeSkillCreateAllButton = newMock("Button")
+_G.TradeSkillInputBox = newMock("EditBox")
+_G.TradeSkillInputBox.GetNumber = function() return 3 end
+_G.GetTradeSkillSelectionIndex = function() return 4 end
+_G.GetTradeSkillInfo = function() return "Bolt of Cloth", "optimal" end
+_G.GetTradeSkillIcon = function() return 132889 end
+_G.GetTradeSkillNumReagents = function() return #reagents end
+_G.GetTradeSkillReagentInfo = function(_, k) return "?", 1, reagents[k][2] end
+_G.GetTradeSkillReagentItemLink = function(_, k) return "|Hitem:" .. reagents[k][1] .. "::|h[x]|h" end
+local recipe = ns.recipe.Current()
+check("recipe read", recipe and #recipe.reagents == 3 and recipe.reagents[1].id == 2592 and recipe.reagents[1].count == 2)
+ns.recipe.Attach()
+check("button in the profession window", ns.recipe.attached.TradeSkillFrame ~= nil)
+ns.recipe.attached.TradeSkillFrame._scripts.OnClick(ns.recipe.attached.TradeSkillFrame)
+check("asks how many crafts", ns.dialog.step == "recipe")
+ns.dialog:Confirm()
+check("reagent on the bar gets more to collect", ns.FindItem(2592).goal == 26)
+check("missing reagent added", ns.FindItem(14047) and ns.FindItem(14047).goal == 3)
+check("enough of a reagent: stays off", not ns.FindItem(2589))
+ns.RemoveItem(14047)
+_G.TradeSkillFrame:Hide()
+check("no recipe with the window closed", ns.recipe.Current() == nil)
+
+-- Syndicator: the mail and the other characters count too; the number goes on from where it was.
+local before = ns.counts[2592]
+_G.Syndicator = { API = {
+    GetInventoryInfoByItemID = function(id)
+        if id ~= 2592 then return { characters = {} } end
+        return { characters = {
+            { character = "Me", realmNormalized = "Realm", bags = 20, bank = 0, mail = 4 },
+            { character = "Alt", realmNormalized = "Realm", bags = 10, bank = 1, mail = 0 },
+        } }
+    end,
+    GetCurrentCharacter = function() return "Me-Realm" end,
+} }
+ns.db.countMail, ns.db.countAlts = true, true
+ns.ApplyAll()
+check("mail and other characters counted", ns.have[2592] == 20 + 4 + 11 and ns.parts[2592].mail == 4
+    and ns.parts[2592].alts == 11)
+check("the count goes on from where it was", ns.counts[2592] == before)
+ns.db.countMail, ns.db.countAlts = false, false
+_G.Syndicator = nil
+ns.ApplyAll()
+check("and back", ns.counts[2592] == before and ns.have[2592] == 20)
+
+-- The bank: on Retail that's also the reagent and warband banks.
+ns.db.includeBank = true
+ns.ApplyAll()
+check("all the banks asked for", lastCountArgs[2] == true and lastCountArgs[4] == true and lastCountArgs[5] == true)
+ns.db.includeBank = false
+ns.ApplyAll()
+
+-- LibDBIcon brought by another addon: the button is a standard one.
+local registered, hidden = {}, {}
+local libButton = newMock("Button")
+libButton.border, libButton.background, libButton.icon = newMock("Texture"), newMock("Texture"), newMock("Texture")
+local libs = {
+    ["LibDataBroker-1.1"] = {
+        objects = {},
+        GetDataObjectByName = function(self, n) return self.objects[n] end,
+        NewDataObject = function(self, n, o) self.objects[n] = o; return o end,
+    },
+    ["LibDBIcon-1.0"] = {
+        IsRegistered = function(_, n) return registered[n] ~= nil end,
+        Register = function(_, n, o, db) registered[n] = { object = o, db = db } end,
+        Refresh = function(_, n, db) hidden[n] = db.hide end,
+        GetMinimapButton = function() return libButton end,
+    },
+}
+_G.LibStub = function(name) return libs[name] end
+ns.MinimapButton.Update()
+check("LibDBIcon button", registered.ItemsCollectTracker ~= nil and not ItemsCollectTrackerMinimapButton:IsShown())
+check("the logo's own ring, no library border", not libButton.border:IsShown() and not libButton.background:IsShown())
+libs["LibDataBroker-1.1"].objects.ItemsCollectTracker.OnClick(nil, "RightButton")
+check("broker right click hides the bars", ns.db.hidden == true and not ns.bar:IsShown())
+ns.ToggleBar()
+SlashCmdList.ITEMSCOLLECTTRACKER("minimap")
+check("hidden through LibDBIcon", hidden.ItemsCollectTracker == true)
+SlashCmdList.ITEMSCOLLECTTRACKER("minimap")
+_G.LibStub = nil
 
 -- Settings window builds in both languages.
 ns.ToggleOptions()
